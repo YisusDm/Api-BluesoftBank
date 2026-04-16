@@ -57,14 +57,25 @@ public sealed class GetExtractoMensualQueryHandler(
             .Where(t => t.Tipo == TipoTransaccion.Retiro)
             .Sum(t => t.Monto);
 
-        // El saldo inicial se deduce del saldo resultante de la primera transacción del período
-        var primeraTransaccion = transacciones.OrderBy(t => t.Fecha).FirstOrDefault();
-        var saldoInicial = primeraTransaccion is null
-            ? cuenta.Saldo
-            : primeraTransaccion.SaldoResultante
-              - (primeraTransaccion.Tipo == TipoTransaccion.Consignacion
-                  ? primeraTransaccion.Monto
-                  : -primeraTransaccion.Monto);
+        // El saldo inicial del período es el saldo resultante de la última transacción
+        // anterior al período. Si no hay transacciones previas, el saldo inicial es 0.
+        // Cuando hay transacciones en el período, se deduce a partir de la primera de ellas
+        // para evitar una consulta adicional a la base de datos.
+        decimal saldoInicial;
+        var primeraTransaccion = transacciones.FirstOrDefault(); // ya vienen ordenadas por Fecha asc
+        if (primeraTransaccion is not null)
+        {
+            saldoInicial = primeraTransaccion.SaldoResultante
+                - (primeraTransaccion.Tipo == TipoTransaccion.Consignacion
+                    ? primeraTransaccion.Monto
+                    : -primeraTransaccion.Monto);
+        }
+        else
+        {
+            // Sin movimientos en el período: consultamos la última transacción anterior.
+            saldoInicial = await transaccionRepository.GetSaldoAntesDePeriodoAsync(
+                request.CuentaId, request.Mes, request.Anio, cancellationToken) ?? 0m;
+        }
 
         var nombreMes = new DateTime(request.Anio, request.Mes, 1).ToString("MMMM yyyy");
 

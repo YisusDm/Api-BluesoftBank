@@ -31,6 +31,8 @@ public sealed class ConsignarCommandHandler(
         ConsignarCommand request,
         CancellationToken cancellationToken)
     {
+        // Sin UPDLOCK: las consignaciones solo suman saldo y no pueden producir saldo negativo,
+        // por lo que la lectura optimista es suficiente y se evita contención innecesaria.
         var cuenta = await cuentaRepository.GetByIdAsync(request.CuentaId, cancellationToken);
 
         if (cuenta is null)

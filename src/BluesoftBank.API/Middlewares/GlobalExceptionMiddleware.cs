@@ -7,6 +7,7 @@ namespace BluesoftBank.API.Middlewares;
 
 public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
 {
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -112,7 +113,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = status;
 
-        return context.Response.WriteAsync(JsonSerializer.Serialize(error, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        return context.Response.WriteAsync(JsonSerializer.Serialize(error, _jsonOptions));
     }
 
     private static string ExtractDuplicateKeyMessage(SqlException ex)

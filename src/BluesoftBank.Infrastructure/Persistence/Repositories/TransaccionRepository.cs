@@ -33,4 +33,19 @@ public sealed class TransaccionRepository(BankDbContext context) : ITransaccionR
             .OrderBy(t => t.Fecha)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<decimal?> GetSaldoAntesDePeriodoAsync(
+        Guid cuentaId,
+        int mes,
+        int anio,
+        CancellationToken cancellationToken = default)
+    {
+        var inicioPeriodo = new DateTime(anio, mes, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        return await context.Transacciones
+            .Where(t => t.CuentaId == cuentaId && t.Fecha < inicioPeriodo)
+            .OrderByDescending(t => t.Fecha)
+            .Select(t => (decimal?)t.SaldoResultante)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

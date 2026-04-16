@@ -44,6 +44,9 @@ public sealed class PersonaNaturalConfiguration : IEntityTypeConfiguration<Perso
         builder.Property(p => p.Cedula)
             .HasMaxLength(20)
             .HasColumnName("Cedula");
+
+        builder.HasIndex(p => p.Cedula)
+            .IsUnique();
     }
 }
 
@@ -54,5 +57,8 @@ public sealed class EmpresaConfiguration : IEntityTypeConfiguration<Empresa>
         builder.Property(e => e.Nit)
             .HasMaxLength(20)
             .HasColumnName("Nit");
+
+        builder.HasIndex(e => e.Nit)
+            .IsUnique();
     }
 }

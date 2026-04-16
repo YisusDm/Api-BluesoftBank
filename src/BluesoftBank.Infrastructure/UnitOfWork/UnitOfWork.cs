@@ -14,6 +14,10 @@ public sealed class UnitOfWork(BankDbContext context) : IUnitOfWork
 
     public async Task BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
     {
+        if (_transaction is not null)
+            throw new InvalidOperationException(
+                "Ya existe una transacción activa. Confirme o revierta la transacción actual antes de iniciar una nueva.");
+
         _transaction = await context.Database.BeginTransactionAsync(isolationLevel, cancellationToken);
     }
 

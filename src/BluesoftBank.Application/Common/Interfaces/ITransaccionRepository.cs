@@ -15,4 +15,14 @@ public interface ITransaccionRepository
         int mes,
         int anio,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retorna el SaldoResultante de la última transacción anterior al inicio del período indicado,
+    /// o null si no existe ninguna transacción previa (cuenta sin movimientos anteriores al período).
+    /// </summary>
+    Task<decimal?> GetSaldoAntesDePeriodoAsync(
+        Guid cuentaId,
+        int mes,
+        int anio,
+        CancellationToken cancellationToken = default);
 }

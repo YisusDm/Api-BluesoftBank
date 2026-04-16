@@ -1,3 +1,4 @@
+using BluesoftBank.API.Models;
 using BluesoftBank.Application.Reportes.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ public sealed class ReportesController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpGet("top-clientes")]
     [ProducesResponseType(typeof(IReadOnlyList<TopClienteDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetTopClientes(
         [FromQuery] int mes,
         [FromQuery] int anio,
@@ -22,7 +23,9 @@ public sealed class ReportesController(IMediator mediator) : ControllerBase
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetTopClientesQuery(mes, anio, top), ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>
@@ -30,12 +33,15 @@ public sealed class ReportesController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpGet("retiros-fuera-ciudad")]
     [ProducesResponseType(typeof(IReadOnlyList<RetiroFueraCiudadDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetRetirosFueraCiudad(
         [FromQuery] int? mes = null,
         [FromQuery] int? anio = null,
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetRetirosFueraCiudadQuery(mes, anio), ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 }

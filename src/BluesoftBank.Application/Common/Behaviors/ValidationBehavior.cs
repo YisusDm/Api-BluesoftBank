@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using BluesoftBank.Application.Common.Results;
 using FluentValidation;
 using MediatR;
@@ -9,6 +11,9 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
+    // Cache compilado por tipo para evitar reflexión en cada llamada.
+    private static readonly ConcurrentDictionary<Type, Func<string, object>> _failureCache = new();
+
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
@@ -33,17 +38,25 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
         var responseType = typeof(TResponse);
 
         if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
-        {
-            var failureMethod = responseType.GetMethod("Failure", [typeof(string)])
-                ?? responseType.BaseType?.GetMethod("Failure", [typeof(string)]);
-
-            if (failureMethod is not null)
-                return (TResponse)failureMethod.Invoke(null, [errors])!;
-        }
+            return CreateFailureResult(responseType, errors);
 
         if (responseType == typeof(Result))
             return (TResponse)(object)Result.Failure(errors);
 
         throw new ValidationException(failures);
+    }
+
+    private static TResponse CreateFailureResult(Type responseType, string errors)
+    {
+        var factory = _failureCache.GetOrAdd(responseType, static t =>
+        {
+            var method = t.GetMethod("Failure", [typeof(string)])
+                ?? throw new InvalidOperationException($"El tipo {t.Name} no expone un método estático Failure(string).");
+            var param = Expression.Parameter(typeof(string), "error");
+            var call = Expression.Call(method, param);
+            var convert = Expression.Convert(call, typeof(object));
+            return Expression.Lambda<Func<string, object>>(convert, param).Compile();
+        });
+        return (TResponse)factory(errors);
     }
 }

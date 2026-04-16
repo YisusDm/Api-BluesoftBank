@@ -1,3 +1,4 @@
+using BluesoftBank.API.Models;
 using BluesoftBank.Application.Cuentas.Commands;
 using BluesoftBank.Application.Cuentas.Queries;
 using MediatR;
@@ -15,13 +16,16 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(CuentasPagedDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListarCuentas(
         [FromQuery] int pagina = 1,
         [FromQuery] int tamano = 10,
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetCuentasQuery(pagina, tamano), ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>Crea una nueva cuenta de ahorro para una persona natural.
@@ -30,7 +34,7 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("ahorro")]
     [ProducesResponseType(typeof(CuentaCreatedResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CrearCuentaAhorro(
         [FromBody] CrearCuentaAhorroRequest request,
         CancellationToken ct = default)
@@ -45,7 +49,7 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
 
         var result = await mediator.Send(command, ct);
         return result.IsFailure
-            ? BadRequest(result.Error)
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
             : CreatedAtAction(nameof(GetSaldo), new { id = result.Value!.CuentaId }, result.Value);
     }
 
@@ -55,7 +59,7 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("corriente")]
     [ProducesResponseType(typeof(CuentaCreatedResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CrearCuentaCorriente(
         [FromBody] CrearCuentaCorrienteRequest request,
         CancellationToken ct = default)
@@ -71,49 +75,55 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
 
         var result = await mediator.Send(command, ct);
         return result.IsFailure
-            ? BadRequest(result.Error)
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
             : CreatedAtAction(nameof(GetSaldo), new { id = result.Value!.CuentaId }, result.Value);
     }
 
     /// <summary>Realiza una consignación en la cuenta especificada.</summary>
     [HttpPost("{id:guid}/consignar")]
     [ProducesResponseType(typeof(ConsignarResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Consignar(Guid id, [FromBody] ConsignarRequest request, CancellationToken ct)
     {
         var command = new ConsignarCommand(id, request.Monto, request.Ciudad);
         var result = await mediator.Send(command, ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>Realiza un retiro de la cuenta especificada.</summary>
     [HttpPost("{id:guid}/retirar")]
     [ProducesResponseType(typeof(RetirarResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Retirar(Guid id, [FromBody] RetirarRequest request, CancellationToken ct)
     {
         var command = new RetirarCommand(id, request.Monto, request.Ciudad);
         var result = await mediator.Send(command, ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>Consulta el saldo actual de la cuenta.</summary>
     [HttpGet("{id:guid}/saldo")]
     [ProducesResponseType(typeof(Application.Cuentas.Queries.SaldoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSaldo(Guid id, CancellationToken ct)
     {
         var result = await mediator.Send(new GetSaldoQuery(id), ct);
-        return result.IsFailure ? NotFound(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? NotFound(new ApiError(ErrorCodes.ACCOUNT_NOT_FOUND, "Cuenta no encontrada", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>Retorna los movimientos recientes de la cuenta con paginación.</summary>
     [HttpGet("{id:guid}/movimientos")]
     [ProducesResponseType(typeof(Application.Cuentas.Queries.MovimientosPagedDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMovimientos(
         Guid id,
         [FromQuery] int pagina = 1,
@@ -121,14 +131,16 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetMovimientosQuery(id, pagina, tamano), ct);
-        return result.IsFailure ? NotFound(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? NotFound(new ApiError(ErrorCodes.ACCOUNT_NOT_FOUND, "Cuenta no encontrada", result.Error))
+            : Ok(result.Value);
     }
 
     /// <summary>Genera el extracto mensual de la cuenta.</summary>
     [HttpGet("{id:guid}/extracto")]
     [ProducesResponseType(typeof(Application.Cuentas.Queries.ExtractoMensualDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExtracto(
         Guid id,
         [FromQuery] int mes,
@@ -136,25 +148,8 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetExtractoMensualQuery(id, mes, anio), ct);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(new ApiError(ErrorCodes.INVALID_REQUEST, "Solicitud inválida", result.Error))
+            : Ok(result.Value);
     }
 }
-
-public sealed record ConsignarRequest(decimal Monto, string Ciudad);
-public sealed record RetirarRequest(decimal Monto, string Ciudad);
-public sealed record CrearCuentaAhorroRequest(
-    string NumeroCuenta,
-    string Ciudad,
-    string Nombre,
-    string Correo,
-    string CiudadCliente,
-    string Cedula);
-
-public sealed record CrearCuentaCorrienteRequest(
-    string NumeroCuenta,
-    string Ciudad,
-    string Nombre,
-    string Correo,
-    string CiudadCliente,
-    string Nit,
-    decimal CupoSobregiro);
