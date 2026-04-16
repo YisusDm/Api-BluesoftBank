@@ -1,0 +1,128 @@
+# =============================================
+# .NET / ASP.NET Core - GitIgnore
+# =============================================
+
+# Compilación y caché
+bin/
+obj/
+.vs/
+packages/
+TestResults/
+BenchmarkDotNet.Artifacts/
+
+# Archivos generados
+*.GeneratedMSBuildEditorConfig.editorconfig
+AssemblyInfo.cs
+AssemblyInfoInputs.cache
+*.AssemblyAttributes.cs
+
+# Node.js (si usas frontend integrado)
+node_modules/
+wwwroot/lib/
+
+# =============================================
+# Visual Studio
+# =============================================
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Visual Studio cache/options
+.vs/
+*.csproj.user
+*.dbmdl
+*.jfm
+
+# =============================================
+# IDEs y editores
+# =============================================
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*~
+
+# =============================================
+# Logs y diagnóstico
+# =============================================
+*.log
+*.tlog
+*.trace
+logs/
+*.diagsession
+
+# =============================================
+# Publicación y despliegue
+# =============================================
+publish/
+out/
+artifacts/
+
+# =============================================
+# NuGet
+# =============================================
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.fragment.lock.json
+packages/
+
+# =============================================
+# Entity Framework
+# =============================================
+*.mdf
+*.ldf
+*.ndf
+
+# =============================================
+# Configuración sensible y seguridad
+# =============================================
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+*.pfx
+*.snk
+*.p12
+
+# =============================================
+# Docker
+# =============================================
+docker-compose.override.yml
+.docker/
+
+# =============================================
+# Pruebas y cobertura
+# =============================================
+coverage/
+*.coverage
+*.coveragexml
+coverlet/
+
+# =============================================
+# Carpetas del proyecto excluidas (solo en raíz)
+# =============================================
+/Api_TarkLoud_Backup/
+/Context/
+/Docs/
+
+# =============================================
+# Archivos del sistema operativo
+# =============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =============================================
+# AI
+# =============================================
+.claude/
+.copilot/

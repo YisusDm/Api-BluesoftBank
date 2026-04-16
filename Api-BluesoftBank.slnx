@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BluesoftBank.Domain/BluesoftBank.Domain.csproj" />
+    <Project Path="src/BluesoftBank.Application/BluesoftBank.Application.csproj" />
+    <Project Path="src/BluesoftBank.Infrastructure/BluesoftBank.Infrastructure.csproj" />
+    <Project Path="src/BluesoftBank.API/BluesoftBank.API.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BluesoftBank.Domain.Tests/BluesoftBank.Domain.Tests.csproj" />
+    <Project Path="tests/BluesoftBank.Application.Tests/BluesoftBank.Application.Tests.csproj" />
+  </Folder>
+</Solution>
