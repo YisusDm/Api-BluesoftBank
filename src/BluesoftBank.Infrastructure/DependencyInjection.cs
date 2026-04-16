@@ -15,8 +15,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<BankDbContext>(options =>
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                sqlOptions => sqlOptions.EnableRetryOnFailure(3)));
+                configuration.GetConnectionString("DefaultConnection")));
 
         services.AddScoped<ICuentaRepository, CuentaRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();

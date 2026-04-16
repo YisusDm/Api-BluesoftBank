@@ -43,7 +43,7 @@ public sealed class GetMovimientosQueryHandler(
                 t.Tipo.ToString(),
                 t.Monto,
                 t.SaldoResultante,
-                t.Ciudad.Nombre,
+                t.CiudadNombre,
                 t.EsFueraDeCiudadOrigen,
                 t.Fecha))
             .ToList();

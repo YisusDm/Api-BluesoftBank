@@ -25,6 +25,7 @@ public sealed class RetirarCommandValidator : AbstractValidator<RetirarCommand>
 
 public sealed class RetirarCommandHandler(
     ICuentaRepository cuentaRepository,
+    ITransaccionRepository transaccionRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<RetirarCommand, Result<RetirarResponse>>
 {
@@ -50,7 +51,20 @@ public sealed class RetirarCommandHandler(
 
             cuenta.Retirar(monto, ciudad);
 
-            await unitOfWork.CommitAsync(cancellationToken);
+            // Agregar transacción manualmente al repositorio
+            var ultimaTransaccion = cuenta.Transacciones.OrderByDescending(t => t.Fecha).First();
+            await transaccionRepository.AddAsync(ultimaTransaccion, cancellationToken);
+
+            try
+            {
+                await unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex) when (ex.GetType().Name == "DbUpdateConcurrencyException")
+            {
+                await unitOfWork.RollbackAsync(cancellationToken);
+                return Result<RetirarResponse>.Failure(
+                    $"La cuenta con Id '{request.CuentaId}' fue modificada por otro proceso. Intente nuevamente.");
+            }
 
             var ultima = cuenta.Transacciones.OrderByDescending(t => t.Fecha).First();
             return Result<RetirarResponse>.Success(

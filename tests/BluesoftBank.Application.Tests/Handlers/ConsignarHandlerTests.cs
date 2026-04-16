@@ -3,6 +3,7 @@ using BluesoftBank.Application.Cuentas.Commands;
 using BluesoftBank.Domain.Entities;
 using BluesoftBank.Domain.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace BluesoftBank.Application.Tests.Handlers;
@@ -10,10 +11,12 @@ namespace BluesoftBank.Application.Tests.Handlers;
 public sealed class ConsignarHandlerTests
 {
     private readonly Mock<ICuentaRepository> _cuentaRepo = new();
+    private readonly Mock<ITransaccionRepository> _transaccionRepo = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<ILogger<ConsignarCommandHandler>> _logger = new();
 
     private ConsignarCommandHandler CrearHandler() =>
-        new(_cuentaRepo.Object, _unitOfWork.Object);
+        new(_cuentaRepo.Object, _transaccionRepo.Object, _unitOfWork.Object, _logger.Object);
 
     private static CuentaAhorro CrearCuentaConSaldo(decimal saldo = 0)
     {

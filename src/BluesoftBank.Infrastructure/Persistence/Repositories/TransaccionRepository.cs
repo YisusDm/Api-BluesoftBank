@@ -6,6 +6,11 @@ namespace BluesoftBank.Infrastructure.Persistence.Repositories;
 
 public sealed class TransaccionRepository(BankDbContext context) : ITransaccionRepository
 {
+    public async Task AddAsync(Transaccion transaccion, CancellationToken cancellationToken = default)
+    {
+        await context.Transacciones.AddAsync(transaccion, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Transaccion>> GetByCuentaIdAsync(
         Guid cuentaId,
         int pagina,
@@ -28,8 +33,8 @@ public sealed class TransaccionRepository(BankDbContext context) : ITransaccionR
     {
         return await context.Transacciones
             .Where(t => t.CuentaId == cuentaId
-                     && t.Fecha.Year == anio
-                     && t.Fecha.Month == mes)
+                && t.Fecha.Year == anio
+                && t.Fecha.Month == mes)
             .OrderBy(t => t.Fecha)
             .ToListAsync(cancellationToken);
     }
@@ -40,12 +45,11 @@ public sealed class TransaccionRepository(BankDbContext context) : ITransaccionR
         int anio,
         CancellationToken cancellationToken = default)
     {
-        var inicioPeriodo = new DateTime(anio, mes, 1, 0, 0, 0, DateTimeKind.Utc);
-
+        var fechaInicio = new DateTime(anio, mes, 1);
         return await context.Transacciones
-            .Where(t => t.CuentaId == cuentaId && t.Fecha < inicioPeriodo)
+            .Where(t => t.CuentaId == cuentaId && t.Fecha < fechaInicio)
             .OrderByDescending(t => t.Fecha)
-            .Select(t => (decimal?)t.SaldoResultante)
+            .Select(t => t.SaldoResultante)
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

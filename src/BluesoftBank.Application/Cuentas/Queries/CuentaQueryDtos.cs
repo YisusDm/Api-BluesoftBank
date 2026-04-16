@@ -52,3 +52,15 @@ public sealed record CuentasPagedDto(
     int TotalRegistros,
     int Pagina,
     int Tamano);
+
+public sealed record CuentaDetalleDto(
+    Guid Id,
+    string NumeroCuenta,
+    string TipoCuenta,
+    decimal Saldo,
+    string Ciudad,
+    DateTime FechaCreacion,
+    string ClienteNombre,
+    Guid ClienteId,
+    string CorreoCliente,
+    string CiudadCliente);

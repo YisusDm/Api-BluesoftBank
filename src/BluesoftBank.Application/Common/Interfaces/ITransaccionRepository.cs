@@ -4,6 +4,8 @@ namespace BluesoftBank.Application.Common.Interfaces;
 
 public interface ITransaccionRepository
 {
+    Task AddAsync(Transaccion transaccion, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Transaccion>> GetByCuentaIdAsync(
         Guid cuentaId,
         int pagina,

@@ -108,6 +108,18 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
             : Ok(result.Value);
     }
 
+    /// <summary>Retorna el detalle completo de una cuenta: saldo, tipo, cliente y ciudad.</summary>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(CuentaDetalleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCuentaById(Guid id, CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetCuentaByIdQuery(id), ct);
+        return result.IsFailure
+            ? NotFound(new ApiError(ErrorCodes.ACCOUNT_NOT_FOUND, "Cuenta no encontrada", result.Error))
+            : Ok(result.Value);
+    }
+
     /// <summary>Consulta el saldo actual de la cuenta.</summary>
     [HttpGet("{id:guid}/saldo")]
     [ProducesResponseType(typeof(Application.Cuentas.Queries.SaldoDto), StatusCodes.Status200OK)]

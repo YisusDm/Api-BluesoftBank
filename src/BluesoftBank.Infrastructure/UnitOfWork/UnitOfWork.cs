@@ -23,8 +23,11 @@ public sealed class UnitOfWork(BankDbContext context) : IUnitOfWork
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
+        if (_transaction is null)
+            throw new InvalidOperationException("No hay una transacción activa para confirmar.");
+
         await context.SaveChangesAsync(cancellationToken);
-        await _transaction!.CommitAsync(cancellationToken);
+        await _transaction.CommitAsync(cancellationToken);
         await _transaction.DisposeAsync();
         _transaction = null;
     }

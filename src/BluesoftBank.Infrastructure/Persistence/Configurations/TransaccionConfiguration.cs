@@ -26,13 +26,9 @@ public sealed class TransaccionConfiguration : IEntityTypeConfiguration<Transacc
             .HasColumnType("decimal(18,2)")
             .IsRequired();
 
-        builder.OwnsOne(t => t.Ciudad, ciudad =>
-        {
-            ciudad.Property(v => v.Nombre)
-                .HasColumnName("CiudadNombre")
-                .HasMaxLength(100)
-                .IsRequired();
-        });
+        builder.Property(t => t.CiudadNombre)
+            .HasMaxLength(100)
+            .IsRequired();
 
         builder.Property(t => t.EsFueraDeCiudadOrigen).IsRequired();
 

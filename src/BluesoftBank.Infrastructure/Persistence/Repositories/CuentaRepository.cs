@@ -10,6 +10,7 @@ public sealed class CuentaRepository(BankDbContext context) : ICuentaRepository
     public async Task<Cuenta?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Cuentas
+            .Include(c => c.Transacciones)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
@@ -19,9 +20,10 @@ public sealed class CuentaRepository(BankDbContext context) : ICuentaRepository
     public async Task<Cuenta?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Cuentas
-            .FromSqlRaw(
-                "SELECT * FROM Cuentas WITH (UPDLOCK, ROWLOCK) WHERE Id = {0}",
-                id)
+            .FromSqlInterpolated(
+                $"SELECT * FROM Cuentas WITH (UPDLOCK, ROWLOCK) WHERE Id = {id}")
+            .Include(c => c.Transacciones)
+            .AsTracking()
             .FirstOrDefaultAsync(cancellationToken);
     }
 

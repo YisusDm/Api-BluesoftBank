@@ -19,7 +19,7 @@ public sealed class Transaccion : Entity
         Tipo = tipo;
         Monto = monto;
         SaldoResultante = saldoResultante;
-        Ciudad = ciudad;
+        CiudadNombre = ciudad.Nombre;
         EsFueraDeCiudadOrigen = esFueraDeCiudadOrigen;
         Fecha = DateTime.UtcNow;
     }
@@ -28,7 +28,7 @@ public sealed class Transaccion : Entity
     public TipoTransaccion Tipo { get; private set; }
     public decimal Monto { get; private set; }
     public decimal SaldoResultante { get; private set; }
-    public Ciudad Ciudad { get; private set; } = null!;
+    public string CiudadNombre { get; private set; } = null!;
     public bool EsFueraDeCiudadOrigen { get; private set; }
     public DateTime Fecha { get; private set; }
 }

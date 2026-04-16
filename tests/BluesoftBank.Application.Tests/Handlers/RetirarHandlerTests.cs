@@ -11,10 +11,11 @@ namespace BluesoftBank.Application.Tests.Handlers;
 public sealed class RetirarHandlerTests
 {
     private readonly Mock<ICuentaRepository> _cuentaRepo = new();
+    private readonly Mock<ITransaccionRepository> _transaccionRepo = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
 
     private RetirarCommandHandler CrearHandler() =>
-        new(_cuentaRepo.Object, _unitOfWork.Object);
+        new(_cuentaRepo.Object, _transaccionRepo.Object, _unitOfWork.Object);
 
     private static CuentaAhorro CrearCuentaConSaldo(decimal saldo)
     {
