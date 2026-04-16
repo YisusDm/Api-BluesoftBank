@@ -24,6 +24,11 @@ public sealed class CuentaConfiguration : IEntityTypeConfiguration<Cuenta>
             .HasColumnType("decimal(18,2)")
             .IsRequired();
 
+        builder.Property(c => c.FechaCreacion)
+            .HasColumnType("datetime2(7)")
+            .IsRequired()
+            .HasDefaultValueSql("SYSUTCDATETIME()");
+
         builder.OwnsOne(c => c.Ciudad, ciudad =>
         {
             ciudad.Property(v => v.Nombre)

@@ -10,6 +10,71 @@ namespace BluesoftBank.API.Controllers;
 [Produces("application/json")]
 public sealed class CuentasController(IMediator mediator) : ControllerBase
 {
+    /// <summary>Lista todas las cuentas con paginación.
+    /// Retorna nombre del cliente, número de cuenta, saldo y fecha de creación.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(CuentasPagedDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarCuentas(
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamano = 10,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetCuentasQuery(pagina, tamano), ct);
+        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+    }
+
+    /// <summary>Crea una nueva cuenta de ahorro para una persona natural.
+    /// Si el cliente (cédula) ya existe, se asocia a esa persona.
+    /// Si no existe, se crea un nuevo cliente.
+    /// </summary>
+    [HttpPost("ahorro")]
+    [ProducesResponseType(typeof(CuentaCreatedResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CrearCuentaAhorro(
+        [FromBody] CrearCuentaAhorroRequest request,
+        CancellationToken ct = default)
+    {
+        var command = new CrearCuentaAhorroCommand(
+            request.NumeroCuenta,
+            request.Ciudad,
+            request.Nombre,
+            request.Correo,
+            request.CiudadCliente,
+            request.Cedula);
+
+        var result = await mediator.Send(command, ct);
+        return result.IsFailure
+            ? BadRequest(result.Error)
+            : CreatedAtAction(nameof(GetSaldo), new { id = result.Value!.CuentaId }, result.Value);
+    }
+
+    /// <summary>Crea una nueva cuenta corriente para una empresa.
+    /// Si el cliente (NIT) ya existe, se asocia a esa empresa.
+    /// Si no existe, se crea una nueva empresa.
+    /// </summary>
+    [HttpPost("corriente")]
+    [ProducesResponseType(typeof(CuentaCreatedResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CrearCuentaCorriente(
+        [FromBody] CrearCuentaCorrienteRequest request,
+        CancellationToken ct = default)
+    {
+        var command = new CrearCuentaCorrienteCommand(
+            request.NumeroCuenta,
+            request.Ciudad,
+            request.Nombre,
+            request.Correo,
+            request.CiudadCliente,
+            request.Nit,
+            request.CupoSobregiro);
+
+        var result = await mediator.Send(command, ct);
+        return result.IsFailure
+            ? BadRequest(result.Error)
+            : CreatedAtAction(nameof(GetSaldo), new { id = result.Value!.CuentaId }, result.Value);
+    }
+
     /// <summary>Realiza una consignación en la cuenta especificada.</summary>
     [HttpPost("{id:guid}/consignar")]
     [ProducesResponseType(typeof(ConsignarResponse), StatusCodes.Status200OK)]
@@ -77,3 +142,19 @@ public sealed class CuentasController(IMediator mediator) : ControllerBase
 
 public sealed record ConsignarRequest(decimal Monto, string Ciudad);
 public sealed record RetirarRequest(decimal Monto, string Ciudad);
+public sealed record CrearCuentaAhorroRequest(
+    string NumeroCuenta,
+    string Ciudad,
+    string Nombre,
+    string Correo,
+    string CiudadCliente,
+    string Cedula);
+
+public sealed record CrearCuentaCorrienteRequest(
+    string NumeroCuenta,
+    string Ciudad,
+    string Nombre,
+    string Correo,
+    string CiudadCliente,
+    string Nit,
+    decimal CupoSobregiro);

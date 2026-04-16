@@ -44,9 +44,9 @@ public sealed class CuentaAhorroTests
     [Fact]
     public void Retirar_MontoValido_DecrementaSaldo()
     {
-        var cuenta = CrearCuenta(1_000_000);
-        cuenta.Retirar(new Dinero(200_000), new Ciudad("BOGOTA"));
-        cuenta.Saldo.Should().Be(800_000);
+        var cuenta = CrearCuenta(3_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("BOGOTA"));
+        cuenta.Saldo.Should().Be(2_000_000);
     }
 
     [Fact]
@@ -68,16 +68,16 @@ public sealed class CuentaAhorroTests
     [Fact]
     public void Retirar_FueraDeCiudad_MarcaTransaccionComoFuera()
     {
-        var cuenta = CrearCuenta(1_000_000);
-        cuenta.Retirar(new Dinero(200_000), new Ciudad("MEDELLIN"));
+        var cuenta = CrearCuenta(3_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("MEDELLIN"));
         cuenta.Transacciones.Last().EsFueraDeCiudadOrigen.Should().BeTrue();
     }
 
     [Fact]
     public void Retirar_EnMismaCiudad_NoMarcaComoFuera()
     {
-        var cuenta = CrearCuenta(1_000_000);
-        cuenta.Retirar(new Dinero(200_000), new Ciudad("BOGOTA"));
+        var cuenta = CrearCuenta(3_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("BOGOTA"));
         cuenta.Transacciones.Last().EsFueraDeCiudadOrigen.Should().BeFalse();
     }
 
@@ -92,8 +92,24 @@ public sealed class CuentaAhorroTests
     [Fact]
     public void Retirar_DispararaRetiroRegistradoEvent()
     {
-        var cuenta = CrearCuenta(1_000_000);
-        cuenta.Retirar(new Dinero(200_000), new Ciudad("BOGOTA"));
+        var cuenta = CrearCuenta(3_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("BOGOTA"));
         cuenta.GetDomainEvents().Should().ContainSingle(e => e is RetiroRegistradoEvent);
+    }
+
+    [Fact]
+    public void Retirar_MontoMenorAlMinimo_LanzaMontoMinimoRetiroException()
+    {
+        var cuenta = CrearCuenta(1_000_000);
+        var act = () => cuenta.Retirar(new Dinero(500_000), new Ciudad("BOGOTA"));
+        act.Should().Throw<MontoMinimoRetiroException>();
+    }
+
+    [Fact]
+    public void Retirar_MontoExactoAlMinimo_Permitido()
+    {
+        var cuenta = CrearCuenta(2_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("BOGOTA"));
+        cuenta.Saldo.Should().Be(1_000_000);
     }
 }

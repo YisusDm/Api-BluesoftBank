@@ -13,24 +13,21 @@ public sealed class ReporteRepository(BankDbContext context) : IReporteRepositor
         int top,
         CancellationToken cancellationToken = default)
     {
-        var resultado = await context.Clientes
-            .Join(context.Cuentas,
-                cliente => cliente.Id,
-                cuenta => cuenta.ClienteId,
-                (cliente, cuenta) => new { cliente, cuenta })
-            .Join(context.Transacciones
-                    .Where(t => t.Fecha.Year == anio && t.Fecha.Month == mes),
-                cc => cc.cuenta.Id,
-                transaccion => transaccion.CuentaId,
-                (cc, transaccion) => new { cc.cliente, transaccion })
-            .GroupBy(x => new { x.cliente.Id, x.cliente.Nombre })
-            .Select(g => new TopClienteDto(
+        // Query syntax: EF Core traduce joins y GroupBy de forma más confiable.
+        // Sum(condicion ? 1 : 0) se emite como SUM(CASE WHEN ... THEN 1 ELSE 0 END).
+        var resultado = await (
+            from t in context.Transacciones
+            where t.Fecha.Year == anio && t.Fecha.Month == mes
+            join c in context.Cuentas on t.CuentaId equals c.Id
+            join cl in context.Clientes on c.ClienteId equals cl.Id
+            group new { t.Tipo } by new { cl.Id, cl.Nombre } into g
+            orderby g.Count() descending
+            select new TopClienteDto(
                 g.Key.Id,
                 g.Key.Nombre,
                 g.Count(),
-                g.Count(x => x.transaccion.Tipo == TipoTransaccion.Consignacion),
-                g.Count(x => x.transaccion.Tipo == TipoTransaccion.Retiro)))
-            .OrderByDescending(x => x.TotalTransacciones)
+                g.Sum(x => x.Tipo == TipoTransaccion.Consignacion ? 1 : 0),
+                g.Sum(x => x.Tipo == TipoTransaccion.Retiro ? 1 : 0)))
             .Take(top)
             .ToListAsync(cancellationToken);
 
@@ -42,43 +39,36 @@ public sealed class ReporteRepository(BankDbContext context) : IReporteRepositor
         int? anio,
         CancellationToken cancellationToken = default)
     {
-        var transaccionesQuery = context.Transacciones
+        // Construir el filtro de transacciones antes del join para que EF Core
+        // lo incorpore en el WHERE del SQL generado.
+        var transacciones = context.Transacciones
             .Where(t => t.EsFueraDeCiudadOrigen && t.Tipo == TipoTransaccion.Retiro);
 
         if (mes.HasValue)
-            transaccionesQuery = transaccionesQuery.Where(t => t.Fecha.Month == mes.Value);
+            transacciones = transacciones.Where(t => t.Fecha.Month == mes.Value);
 
         if (anio.HasValue)
-            transaccionesQuery = transaccionesQuery.Where(t => t.Fecha.Year == anio.Value);
+            transacciones = transacciones.Where(t => t.Fecha.Year == anio.Value);
 
-        var resultado = await context.Clientes
-            .Join(context.Cuentas,
-                cliente => cliente.Id,
-                cuenta => cuenta.ClienteId,
-                (cliente, cuenta) => new { cliente, cuenta })
-            .Join(transaccionesQuery,
-                cc => cc.cuenta.Id,
-                transaccion => transaccion.CuentaId,
-                (cc, transaccion) => new { cc.cliente, transaccion })
-            .GroupBy(x => new { x.cliente.Id, x.cliente.Nombre, CiudadNombre = x.cliente.Ciudad.Nombre })
-            .Select(g => new
+        var resultado = await (
+            from t in transacciones
+            join c in context.Cuentas on t.CuentaId equals c.Id
+            join cl in context.Clientes on c.ClienteId equals cl.Id
+            group new { t.Monto, t.Fecha } by new
             {
+                cl.Id,
+                cl.Nombre,
+                CiudadNombre = cl.Ciudad.Nombre
+            } into g
+            where g.Sum(x => x.Monto) > 1_000_000
+            orderby g.Sum(x => x.Monto) descending
+            select new RetiroFueraCiudadDto(
                 g.Key.Id,
                 g.Key.Nombre,
                 g.Key.CiudadNombre,
-                Total = g.Count(),
-                ValorTotal = g.Sum(x => x.transaccion.Monto),
-                UltimoRetiro = g.Max(x => x.transaccion.Fecha)
-            })
-            .Where(x => x.ValorTotal > 1_000_000)
-            .OrderByDescending(x => x.ValorTotal)
-            .Select(x => new RetiroFueraCiudadDto(
-                x.Id,
-                x.Nombre,
-                x.CiudadNombre,
-                x.Total,
-                x.ValorTotal,
-                x.UltimoRetiro))
+                g.Count(),
+                g.Sum(x => x.Monto),
+                g.Max(x => x.Fecha)))
             .ToListAsync(cancellationToken);
 
         return resultado;

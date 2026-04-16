@@ -27,14 +27,14 @@ public sealed class RetirarHandlerTests
     [Fact]
     public async Task Handle_CuentaConSaldoSuficiente_RetornaResultadoExitoso()
     {
-        var cuenta = CrearCuentaConSaldo(1_000_000);
+        var cuenta = CrearCuentaConSaldo(3_000_000);
         _cuentaRepo.Setup(r => r.GetByIdForUpdateAsync(cuenta.Id, default)).ReturnsAsync(cuenta);
 
         var result = await CrearHandler().Handle(
-            new RetirarCommand(cuenta.Id, 200_000, "BOGOTA"), default);
+            new RetirarCommand(cuenta.Id, 1_000_000, "BOGOTA"), default);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.NuevoSaldo.Should().Be(800_000);
+        result.Value!.NuevoSaldo.Should().Be(2_000_000);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class RetirarHandlerTests
             .ReturnsAsync((CuentaAhorro?)null);
 
         var result = await CrearHandler().Handle(
-            new RetirarCommand(Guid.NewGuid(), 200_000, "BOGOTA"), default);
+            new RetirarCommand(Guid.NewGuid(), 1_000_000, "BOGOTA"), default);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -52,11 +52,11 @@ public sealed class RetirarHandlerTests
     [Fact]
     public async Task Handle_SaldoInsuficiente_RetornaResultadoFallido()
     {
-        var cuenta = CrearCuentaConSaldo(100_000);
+        var cuenta = CrearCuentaConSaldo(1_500_000);
         _cuentaRepo.Setup(r => r.GetByIdForUpdateAsync(cuenta.Id, default)).ReturnsAsync(cuenta);
 
         var result = await CrearHandler().Handle(
-            new RetirarCommand(cuenta.Id, 500_000, "BOGOTA"), default);
+            new RetirarCommand(cuenta.Id, 2_000_000, "BOGOTA"), default);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Contain("insuficiente");
@@ -68,7 +68,7 @@ public sealed class RetirarHandlerTests
         var cuenta = CrearCuentaConSaldo(1_000_000);
         _cuentaRepo.Setup(r => r.GetByIdForUpdateAsync(cuenta.Id, default)).ReturnsAsync(cuenta);
 
-        await CrearHandler().Handle(new RetirarCommand(cuenta.Id, 100_000, "BOGOTA"), default);
+        await CrearHandler().Handle(new RetirarCommand(cuenta.Id, 1_000_000, "BOGOTA"), default);
 
         _unitOfWork.Verify(u =>
             u.BeginTransactionAsync(IsolationLevel.Serializable, default), Times.Once);
@@ -80,7 +80,7 @@ public sealed class RetirarHandlerTests
         var cuenta = CrearCuentaConSaldo(1_000_000);
         _cuentaRepo.Setup(r => r.GetByIdForUpdateAsync(cuenta.Id, default)).ReturnsAsync(cuenta);
 
-        await CrearHandler().Handle(new RetirarCommand(cuenta.Id, 100_000, "BOGOTA"), default);
+        await CrearHandler().Handle(new RetirarCommand(cuenta.Id, 1_000_000, "BOGOTA"), default);
 
         _unitOfWork.Verify(u => u.CommitAsync(default), Times.Once);
     }

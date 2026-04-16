@@ -1,5 +1,6 @@
+using BluesoftBank.API.Models;
 using BluesoftBank.Domain.Exceptions;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using System.Text.Json;
 
 namespace BluesoftBank.API.Middlewares;
@@ -21,29 +22,105 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
 
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        var (status, title) = exception switch
+        var (status, errorCode, title, message, suggestedAction) = exception switch
         {
-            CuentaNotFoundException => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
-            SaldoInsuficienteException => (StatusCodes.Status422UnprocessableEntity, "Regla de negocio violada"),
-            MontoInvalidoException => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
-            _ => (StatusCodes.Status500InternalServerError, "Error interno del servidor")
+            CuentaNotFoundException ex =>
+                (StatusCodes.Status404NotFound,
+                 ErrorCodes.ACCOUNT_NOT_FOUND,
+                 "Cuenta no encontrada",
+                 ex.Message,
+                 "Verifique el ID de la cuenta e intente nuevamente"),
+
+            MontoMinimoRetiroException ex =>
+                (StatusCodes.Status422UnprocessableEntity,
+                 ErrorCodes.MINIMUM_WITHDRAWAL_NOT_MET,
+                 "Monto de retiro inválido",
+                 ex.Message,
+                 "Aumente el monto del retiro al mínimo permitido"),
+
+            SaldoInsuficienteException ex =>
+                (StatusCodes.Status422UnprocessableEntity,
+                 ErrorCodes.INSUFFICIENT_BALANCE,
+                 "Fondos insuficientes",
+                 ex.Message,
+                 "Ingrese un monto menor o incremente el saldo de su cuenta"),
+
+            MontoInvalidoException ex =>
+                (StatusCodes.Status400BadRequest,
+                 ErrorCodes.INVALID_AMOUNT,
+                 "Monto inválido",
+                 ex.Message,
+                 "Ingrese un monto válido mayor a cero"),
+
+            NumeroCuentaDuplicadoException ex =>
+                (StatusCodes.Status409Conflict,
+                 ErrorCodes.DUPLICATE_ACCOUNT_NUMBER,
+                 "Número de cuenta duplicado",
+                 ex.Message,
+                 "Ingrese un número de cuenta diferente"),
+
+            CorreoDuplicadoException ex =>
+                (StatusCodes.Status409Conflict,
+                 ErrorCodes.DUPLICATE_EMAIL,
+                 "Correo electrónico duplicado",
+                 ex.Message,
+                 "Ingrese un correo electrónico diferente"),
+
+            ClienteYaExisteException ex =>
+                (StatusCodes.Status409Conflict,
+                 ErrorCodes.DUPLICATE_KEY,
+                 "Cliente ya registrado",
+                 ex.Message,
+                 "Intente registrarse con datos diferentes o use el cliente existente"),
+
+            SqlException sqlEx when (sqlEx.Number == 1205) =>
+                (StatusCodes.Status409Conflict,
+                 ErrorCodes.CONCURRENCY_CONFLICT,
+                 "Conflicto de concurrencia",
+                 "La operación no pudo completarse porque el recurso fue modificado por otra operación simultánea.",
+                 "Intente nuevamente en unos segundos"),
+
+            SqlException sqlEx when (sqlEx.Number == 2627) || (sqlEx.Number == 2601) =>
+                (StatusCodes.Status409Conflict,
+                 ErrorCodes.DUPLICATE_KEY,
+                 "Datos duplicados",
+                 ExtractDuplicateKeyMessage(sqlEx),
+                 "Verifique los datos e intente nuevamente"),
+
+            DomainException ex =>
+                (StatusCodes.Status422UnprocessableEntity,
+                 ErrorCodes.BUSINESS_RULE_VIOLATION,
+                 "Error en la operación",
+                 ex.Message,
+                 "Verifique los datos e intente nuevamente"),
+
+            _ =>
+                (StatusCodes.Status500InternalServerError,
+                 ErrorCodes.INTERNAL_ERROR,
+                 "Error interno del servidor",
+                 "Ocurrió un error inesperado en el servidor.",
+                 "Por favor intente más tarde o contacte al soporte")
         };
 
-        var detail = exception is DomainException
-            ? exception.Message
-            : "Ocurrió un error inesperado. Por favor intente nuevamente.";
+        var error = new ApiError(
+            Code: errorCode,
+            Title: title,
+            Message: message,
+            SuggestedAction: suggestedAction,
+            Timestamp: DateTime.UtcNow);
 
-        var problem = new ProblemDetails
-        {
-            Status = status,
-            Title = title,
-            Detail = detail,
-            Instance = context.Request.Path
-        };
-
-        context.Response.ContentType = "application/problem+json";
+        context.Response.ContentType = "application/json";
         context.Response.StatusCode = status;
 
-        return context.Response.WriteAsync(JsonSerializer.Serialize(problem));
+        return context.Response.WriteAsync(JsonSerializer.Serialize(error, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+    }
+
+    private static string ExtractDuplicateKeyMessage(SqlException ex)
+    {
+        return ex.Message.Contains("NumeroCuenta")
+            ? "El número de cuenta ingresado ya existe en el sistema."
+            : ex.Message.Contains("Correo")
+            ? "El correo electrónico ingresado ya está registrado."
+            : "Los datos ingresados ya existen en el sistema.";
     }
 }

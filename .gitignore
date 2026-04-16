@@ -110,8 +110,6 @@ coverlet/
 # =============================================
 # Carpetas del proyecto excluidas (solo en raíz)
 # =============================================
-/Api_TarkLoud_Backup/
-/Context/
 /Docs/
 
 # =============================================

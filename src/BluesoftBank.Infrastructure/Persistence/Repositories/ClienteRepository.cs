@@ -12,6 +12,20 @@ public sealed class ClienteRepository(BankDbContext context) : IClienteRepositor
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    public async Task<PersonaNatural?> GetPersonaNaturalByCedulaAsync(
+        string cedula, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<PersonaNatural>()
+            .FirstOrDefaultAsync(p => p.Cedula == cedula, cancellationToken);
+    }
+
+    public async Task<Empresa?> GetEmpresaByNitAsync(
+        string nit, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<Empresa>()
+            .FirstOrDefaultAsync(e => e.Nit == nit, cancellationToken);
+    }
+
     public async Task AddAsync(Cliente cliente, CancellationToken cancellationToken = default)
     {
         await context.Clientes.AddAsync(cliente, cancellationToken);

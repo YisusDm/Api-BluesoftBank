@@ -19,40 +19,40 @@ public sealed class CuentaCorrienteTests
     [Fact]
     public void Retirar_DentroDelSobregiro_Permitido()
     {
-        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 200_000);
-        cuenta.Retirar(new Dinero(150_000), new Ciudad("CALI"));
-        cuenta.Saldo.Should().Be(-150_000);
+        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 2_000_000);
+        cuenta.Retirar(new Dinero(1_500_000), new Ciudad("CALI"));
+        cuenta.Saldo.Should().Be(-1_500_000);
     }
 
     [Fact]
     public void Retirar_SuperaSobregiro_LanzaSaldoInsuficienteException()
     {
-        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 200_000);
-        var act = () => cuenta.Retirar(new Dinero(250_000), new Ciudad("CALI"));
+        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 2_000_000);
+        var act = () => cuenta.Retirar(new Dinero(2_500_000), new Ciudad("CALI"));
         act.Should().Throw<SaldoInsuficienteException>();
     }
 
     [Fact]
     public void Retirar_ExactamenteAlLimiteSobregiro_Permitido()
     {
-        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 200_000);
-        cuenta.Retirar(new Dinero(200_000), new Ciudad("CALI"));
-        cuenta.Saldo.Should().Be(-200_000);
+        var cuenta = CrearCuenta(saldoInicial: 0, cupoSobregiro: 1_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("CALI"));
+        cuenta.Saldo.Should().Be(-1_000_000);
     }
 
     [Fact]
     public void Retirar_ConSaldoPositivoMasSobregiro_Calcula()
     {
-        var cuenta = CrearCuenta(saldoInicial: 50_000, cupoSobregiro: 100_000);
-        cuenta.Retirar(new Dinero(140_000), new Ciudad("CALI"));
-        cuenta.Saldo.Should().Be(-90_000);
+        var cuenta = CrearCuenta(saldoInicial: 500_000, cupoSobregiro: 1_000_000);
+        cuenta.Retirar(new Dinero(1_400_000), new Ciudad("CALI"));
+        cuenta.Saldo.Should().Be(-900_000);
     }
 
     [Fact]
     public void Retirar_SuperaLimiteTotalSaldoMasSobregiro_LanzaException()
     {
-        var cuenta = CrearCuenta(saldoInicial: 50_000, cupoSobregiro: 100_000);
-        var act = () => cuenta.Retirar(new Dinero(160_000), new Ciudad("CALI"));
+        var cuenta = CrearCuenta(saldoInicial: 500_000, cupoSobregiro: 1_000_000);
+        var act = () => cuenta.Retirar(new Dinero(1_600_000), new Ciudad("CALI"));
         act.Should().Throw<SaldoInsuficienteException>();
     }
 
@@ -61,5 +61,21 @@ public sealed class CuentaCorrienteTests
     {
         var act = () => new CuentaCorriente("002-111", new Ciudad("CALI"), Guid.NewGuid(), -500);
         act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Retirar_MontoMenorAlMinimo_LanzaMontoMinimoRetiroException()
+    {
+        var cuenta = CrearCuenta(saldoInicial: 500_000, cupoSobregiro: 1_000_000);
+        var act = () => cuenta.Retirar(new Dinero(500_000), new Ciudad("CALI"));
+        act.Should().Throw<MontoMinimoRetiroException>();
+    }
+
+    [Fact]
+    public void Retirar_MontoExactoAlMinimoConSobregiro_Permitido()
+    {
+        var cuenta = CrearCuenta(saldoInicial: 500_000, cupoSobregiro: 1_000_000);
+        cuenta.Retirar(new Dinero(1_000_000), new Ciudad("CALI"));
+        cuenta.Saldo.Should().Be(-500_000);
     }
 }

@@ -21,12 +21,14 @@ public abstract class Cuenta : Entity
         Ciudad = ciudad;
         ClienteId = clienteId;
         Saldo = 0m;
+        FechaCreacion = DateTime.UtcNow;
     }
 
     public string NumeroCuenta { get; private set; } = null!;
     public decimal Saldo { get; private set; }
     public Ciudad Ciudad { get; private set; } = null!;
     public Guid ClienteId { get; private set; }
+    public DateTime FechaCreacion { get; private set; }
     public IReadOnlyCollection<Transaccion> Transacciones => _transacciones.AsReadOnly();
 
     public void Consignar(Dinero monto)
@@ -45,6 +47,9 @@ public abstract class Cuenta : Entity
     {
         ArgumentNullException.ThrowIfNull(monto);
         ArgumentNullException.ThrowIfNull(ciudadRetiro);
+
+        if (monto.Valor < 1_000_000)
+            throw new MontoMinimoRetiroException(monto.Valor, 1_000_000);
 
         ValidarRetiro(monto);
 

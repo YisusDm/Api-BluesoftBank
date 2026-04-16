@@ -32,3 +32,23 @@ public sealed record ExtractoMensualDto(
     decimal TotalConsignaciones,
     decimal TotalRetiros,
     IReadOnlyList<MovimientoDto> Movimientos);
+
+public sealed record ClienteResumenDto(
+    Guid ClienteId,
+    string Nombre,
+    string Correo,
+    string Ciudad);
+
+public sealed record CuentaListItemDto(
+    Guid CuentaId,
+    string NumeroCuenta,
+    string TipoCuenta,
+    decimal Saldo,
+    DateTime FechaCreacion,
+    ClienteResumenDto Cliente);
+
+public sealed record CuentasPagedDto(
+    IReadOnlyList<CuentaListItemDto> Cuentas,
+    int TotalRegistros,
+    int Pagina,
+    int Tamano);
